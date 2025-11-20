@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 # Load model
-with open('Student_model (1).pkl', 'rb') as f:
+with open('Student_model .pkl', 'rb') as f:
     model = pickle.load(f)
 
 st.title("Employee Feedback Prediction")
