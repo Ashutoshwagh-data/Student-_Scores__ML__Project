@@ -64,4 +64,4 @@ else:
 st.markdown("<h1 style='text-align:center;'>🎓 Student Score Predictor</h1>", unsafe_allow_html=True)
 
 # ---- INPUT FORM ----
-st.markdown("<div class='card'>", u
+st.markdown("<div class='card'>", u)
