@@ -1,118 +1,88 @@
 import streamlit as st
 import pandas as pd
-from io import StringIO
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error
+import plotly.express as px
 
-# ----------- Embedded CSV ------------
-csv_data = """
-Hours,Scores
-1.5,20
-2.0,22
-2.5,30
-3.0,35
-3.5,40
-4.0,45
-4.5,50
-5.0,55
-5.5,60
-6.0,65
-6.5,70
-7.0,75
-7.5,80
-8.0,85
-8.5,90
-9.0,95
-9.5,98
-"""
-
-df = pd.read_csv(StringIO(csv_data))
-
-# ----------- Page UI -------------
-st.set_page_config(page_title="Student Score Predictor", page_icon="🎓")
-
-st.markdown(
-    """
-    <h1 style='text-align:center; color:#4CAF50;'>🎓 Student Score Prediction</h1>
-    <p style='text-align:center; font-size:18px;'>Simple & beautiful ML app to predict scores using hours of study.</p>
-    """,
-    unsafe_allow_html=True
+# -------------------- PAGE CONFIG --------------------
+st.set_page_config(
+    page_title="Student Score Prediction",
+    page_icon="📘",
+    layout="centered"
 )
 
-# ----------- Sidebar -------------
-st.sidebar.header("⚙️ Model Settings")
+st.markdown("""
+<style>
+    .main {
+        background: #F8FAFF;
+    }
+    .title {
+        font-size: 40px;
+        font-weight: 800;
+        color: #2A4D69;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .sub {
+        font-size: 18px;
+        text-align: center;
+        color: #4F6272;
+        margin-bottom: 30px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-model_choice = st.sidebar.selectbox(
-    "Choose Model",
-    ["Linear Regression", "Polynomial Regression", "Random Forest"]
-)
+# -------------------- HEADER --------------------
+st.markdown("<div class='title'>📘 Student Score Prediction App</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub'>Simple • Clean • Attractive UI • Better ML Model • Graph Insights</div>", unsafe_allow_html=True)
 
-degree = st.sidebar.slider("Polynomial Degree", 2, 6, 3)
-hours_input = st.sidebar.number_input("Study Hours", min_value=0.0, max_value=12.0, value=5.0, step=0.5)
+# -------------------- FILE UPLOAD --------------------
+st.write("### 📤 Upload your CSV file (hours vs score)")
 
-# ----------- Training -------------
-X = df[["Hours"]]
-y = df["Scores"]
+uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
 
-# Select model
-if model_choice == "Linear Regression":
+    st.success("File uploaded successfully!")
+    st.write("### 📄 Dataset Preview")
+    st.dataframe(df)
+
+    # -------------------- GRAPH --------------------
+    fig = px.scatter(df, x=df.columns[0], y=df.columns[1], trendline="ols",
+                     title="Study Hours vs Score Relationship")
+    st.plotly_chart(fig)
+
+    # -------------------- MODEL TRAINING --------------------
+    X = df[[df.columns[0]]]
+    y = df[df.columns[1]]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
     model = LinearRegression()
+    model.fit(X_train, y_train)
 
-elif model_choice == "Polynomial Regression":
-    model = Pipeline([
-        ("poly", PolynomialFeatures(degree=degree)),
-        ("lr", LinearRegression())
-    ])
+    pred_test = model.predict(X_test)
+
+    # FIXED RMSE (No squared=False)
+    mse = mean_squared_error(y_test, pred_test)
+    rmse = mse ** 0.5
+
+    st.info(f"📊 **Model RMSE:** {rmse:.2f}")
+
+    # -------------------- USER INPUT PREDICTION --------------------
+    st.write("### 🎯 Predict Student Score")
+    hours = st.slider("Study Hours", 0, 12, 5)
+
+    predicted_score = model.predict([[hours]])[0]
+
+    st.success(f"📘 Predicted Score for {hours} hours: **{predicted_score:.2f}**")
 
 else:
-    model = RandomForestRegressor(n_estimators=200, random_state=42)
+    st.warning("Please upload a CSV file to proceed.")
 
-model.fit(X_train, y_train)
-pred_test = model.predict(X_test)
-
-# Metrics
-rmse = mean_squared_error(y_test, pred_test, squared=False)
-r2 = r2_score(y_test, pred_test)
-
-# ----------- Prediction -------------
-pred_value = model.predict(np.array([[hours_input]]))[0]
-
-st.markdown(
-    f"""
-    <div style="background:#e8f5e9; padding:15px; border-radius:10px; margin-top:10px;">
-        <h3>📘 Predicted Score for <b>{hours_input}</b> hours:</h3>
-        <h2 style="color:#2e7d32;">{pred_value:.2f}</h2>
-        <p>Using <b>{model_choice}</b></p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# ----------- Metrics Display -------------
-col1, col2 = st.columns(2)
-col1.metric("RMSE", f"{rmse:.2f}")
-col2.metric("R² Score", f"{r2:.2f}")
-
-# ----------- Graphs -------------
-st.subheader("📊 Hours vs Scores")
-fig1, ax1 = plt.subplots()
-ax1.scatter(df["Hours"], df["Scores"])
-ax1.set_xlabel("Hours")
-ax1.set_ylabel("Scores")
-st.pyplot(fig1)
-
-st.subheader("📈 Actual vs Predicted")
-fig2, ax2 = plt.subplots()
-ax2.scatter(y_test, pred_test)
-ax2.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--")
-ax2.set_xlabel("Actual")
-ax2.set_ylabel("Predicted")
-st.pyplot(fig2)
+# -------------------- FOOTER --------------------
+st.markdown("---")
+st.markdown("##### Developed by Ashutosh • Machine Learning Project • 2025")
