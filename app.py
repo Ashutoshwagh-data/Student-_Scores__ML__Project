@@ -33,50 +33,62 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='title'>📘 Student Score Prediction App</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub'>Simple • Clean • Attractive UI</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub'>Enter Your Data • Train Model • Predict Scores</div>", unsafe_allow_html=True)
 
-# -------------------- FILE UPLOAD --------------------
-uploaded_file = st.file_uploader("📤 Upload your CSV file (hours vs score)", type=["csv"])
+# -------------------- TEXT AREA INPUT --------------------
+st.write("### ✏️ Enter Dataset (Hours,Score)")
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+data_text = st.text_area(
+    "Paste data in this format:\nHours,Score\n1,10\n2,20\n3,30",
+    height=180
+)
 
-    st.success("File uploaded successfully!")
-    st.write("### 📄 Dataset Preview")
-    st.dataframe(df)
+if st.button("Train Model"):
+    if data_text.strip() == "":
+        st.error("⚠ Please enter dataset first!")
+    else:
+        try:
+            # Convert text to DataFrame
+            from io import StringIO
+            df = pd.read_csv(StringIO(data_text))
 
-    # -------------------- SCATTER PLOT (NO TRENDLINE) --------------------
-    fig = px.scatter(df, x=df.columns[0], y=df.columns[1],
-                     title="Study Hours vs Score")
-    st.plotly_chart(fig)
+            st.success("✔ Data loaded successfully!")
+            st.write("### 📄 Dataset Preview")
+            st.dataframe(df)
 
-    # -------------------- MODEL TRAINING --------------------
-    X = df[[df.columns[0]]]
-    y = df[df.columns[1]]
+            # Scatter Graph
+            fig = px.scatter(df, x=df.columns[0], y=df.columns[1],
+                             title="Study Hours vs Score")
+            st.plotly_chart(fig)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            # Train Model
+            X = df[[df.columns[0]]]
+            y = df[df.columns[1]]
 
-    model = LinearRegression()
-    model.fit(X_train, y_train)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42
+            )
 
-    pred_test = model.predict(X_test)
+            model = LinearRegression()
+            model.fit(X_train, y_train)
 
-    # RMSE FIX
-    mse = mean_squared_error(y_test, pred_test)
-    rmse = mse ** 0.5
+            pred_test = model.predict(X_test)
 
-    st.info(f"📊 **Model RMSE:** {rmse:.2f}")
+            # RMSE Calculation (No squared=False)
+            mse = mean_squared_error(y_test, pred_test)
+            rmse = mse ** 0.5
 
-    # -------------------- PREDICTION --------------------
-    st.write("### 🎯 Predict Student Score")
-    hours = st.slider("Study Hours", 0, 12, 5)
+            st.info(f"📊 **Model RMSE:** {rmse:.2f}")
 
-    predicted_score = model.predict([[hours]])[0]
+            # Prediction Section
+            st.write("### 🎯 Predict Student Score")
+            hours = st.slider("Study Hours", 0, 12, 5)
 
-    st.success(f"📘 Predicted Score for {hours} hours: **{predicted_score:.2f}**")
+            predicted_score = model.predict([[hours]])[0]
+            st.success(f"📘 Predicted Score for {hours} hours: **{predicted_score:.2f}**")
 
-else:
-    st.warning("Please upload a CSV file to proceed.")
+        except Exception as e:
+            st.error(f"❌ Error: Invalid data format\n\n{e}")
 
 # -------------------- FOOTER --------------------
 st.markdown("---")
