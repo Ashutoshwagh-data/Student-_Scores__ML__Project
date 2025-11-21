@@ -1,74 +1,72 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-import plotly.express as px
+import pickle
 
-st.set_page_config(page_title="Student Score Prediction", page_icon="📘")
+st.set_page_config(page_title="Student Score Predictor", page_icon="🎯", layout="centered")
 
-# ---------- HEADER ----------
+# ---- Custom Style ----
 st.markdown("""
-<h1 style="text-align:center; color:#1C4E80;">📘 Student Score Prediction</h1>
-<h4 style="text-align:center; color:#4F6272;">Enter Hours & Score • Train Model • Predict</h4>
+<style>
+.card {
+    background: linear-gradient(135deg, #ffffff 0%, #f2f7ff 100%);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+.subtitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: #34495e;
+}
+.label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# ---------- NUMBER OF INPUT ROWS ----------
-st.write("### ✏️ Enter number of rows:")
-rows = st.number_input("How many data rows you want to enter?", min_value=1, max_value=50, value=5)
+# ---- Load model & Data ----
+df = pd.read_csv("student_scores.csv")
+model = pickle.load(open("student_model.pkl", "rb"))
 
-hours_list = []
-score_list = []
+# ---- Title ----
+st.markdown('<div class="title">🎯 Student Score Predictor</div>', unsafe_allow_html=True)
 
-st.write("### 🧮 Enter Data")
+# ---- Dataset ----
+st.markdown('<div class="subtitle">📘 Dataset Preview</div>', unsafe_allow_html=True)
+st.dataframe(df)
 
-# ---------- INPUT BOXES ----------
-for i in range(rows):
-    col1, col2 = st.columns(2)
-    with col1:
-        h = st.number_input(f"Hours (Row {i+1})", min_value=0.0, max_value=24.0, key=f"h{i}")
-    with col2:
-        s = st.number_input(f"Score (Row {i+1})", min_value=0.0, max_value=100.0, key=f"s{i}")
+# ---- Input Card ----
+st.markdown('<div class="subtitle">📥 Enter Details for Prediction</div>', unsafe_allow_html=True)
 
-    hours_list.append(h)
-    score_list.append(s)
+st.markdown('<div class="card">', unsafe_allow_html=True)
+hours = st.number_input("📘 Hours Studied", min_value=0.0, max_value=24.0, step=0.5, format="%.2f")
+attendance = st.number_input("📊 Attendance (%)", min_value=0.0, max_value=100.0, step=1.0, format="%.2f")
+assignments = st.number_input("📝 Assignments Submitted", min_value=0, max_value=20, step=1)
+st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------- TRAIN MODEL BUTTON ----------
-if st.button("Train Model"):
-    df = pd.DataFrame({"Hours": hours_list, "Score": score_list})
-    st.success("✔ Data collected successfully!")
+# ---- Input Preview ----
+st.markdown('<div class="subtitle">🔍 Input Preview</div>', unsafe_allow_html=True)
 
-    st.write("### 📄 Dataset Preview")
-    st.dataframe(df)
+st.markdown(f"""
+<div class="card">
+<b>Hours Studied:</b> {hours} <br>
+<b>Attendance:</b> {attendance}% <br>
+<b>Assignments Submitted:</b> {assignments}
+</div>
+""", unsafe_allow_html=True)
 
-    # Graph
-    fig = px.scatter(df, x="Hours", y="Score", title="Study Hours vs Score")
-    st.plotly_chart(fig)
+# ---- Prediction ----
+if st.button("🚀 Predict Score"):
+    input_data = pd.DataFrame([[hours, attendance, assignments]],
+                              columns=['Hours Studied', 'Attendance', 'Assignments Submitted'])
+    pred = model.predict(input_data)[0]
 
-    # Train Model
-    X = df[["Hours"]]
-    y = df["Score"]
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-
-    pred_test = model.predict(X_test)
-
-    mse = mean_squared_error(y_test, pred_test)
-    rmse = mse ** 0.5
-
-    st.info(f"📊 **Model RMSE:** {rmse:.2f}")
-
-    # Prediction
-    st.write("### 🎯 Predict Student Score")
-    hours_input = st.slider("Study Hours", 0, 12, 5)
-    predicted_score = model.predict([[hours_input]])[0]
-
-    st.success(f"📘 Predicted Score for {hours_input} hours: **{predicted_score:.2f}**")
-
-# Footer
-st.markdown("---")
-st.markdown("##### Developed by Ashutosh • ML Project • 2025")
+    st.success(f"🎉 Predicted Score: **{pred:.2f}**")
