@@ -13,17 +13,15 @@ st.set_page_config(
     layout="centered"
 )
 
+# -------------------- HEADER UI --------------------
 st.markdown("""
 <style>
-    .main {
-        background: #F8FAFF;
-    }
     .title {
-        font-size: 40px;
+        font-size: 38px;
         font-weight: 800;
-        color: #2A4D69;
+        color: #1C4E80;
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     .sub {
         font-size: 18px;
@@ -34,14 +32,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------- HEADER --------------------
 st.markdown("<div class='title'>📘 Student Score Prediction App</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub'>Simple • Clean • Attractive UI • Better ML Model • Graph Insights</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub'>Simple • Clean • Attractive UI</div>", unsafe_allow_html=True)
 
 # -------------------- FILE UPLOAD --------------------
-st.write("### 📤 Upload your CSV file (hours vs score)")
-
-uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+uploaded_file = st.file_uploader("📤 Upload your CSV file (hours vs score)", type=["csv"])
 
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
@@ -50,9 +45,9 @@ if uploaded_file is not None:
     st.write("### 📄 Dataset Preview")
     st.dataframe(df)
 
-    # -------------------- GRAPH --------------------
-    fig = px.scatter(df, x=df.columns[0], y=df.columns[1], trendline="ols",
-                     title="Study Hours vs Score Relationship")
+    # -------------------- SCATTER PLOT (NO TRENDLINE) --------------------
+    fig = px.scatter(df, x=df.columns[0], y=df.columns[1],
+                     title="Study Hours vs Score")
     st.plotly_chart(fig)
 
     # -------------------- MODEL TRAINING --------------------
@@ -66,13 +61,13 @@ if uploaded_file is not None:
 
     pred_test = model.predict(X_test)
 
-    # FIXED RMSE (No squared=False)
+    # RMSE FIX
     mse = mean_squared_error(y_test, pred_test)
     rmse = mse ** 0.5
 
     st.info(f"📊 **Model RMSE:** {rmse:.2f}")
 
-    # -------------------- USER INPUT PREDICTION --------------------
+    # -------------------- PREDICTION --------------------
     st.write("### 🎯 Predict Student Score")
     hours = st.slider("Study Hours", 0, 12, 5)
 
@@ -85,4 +80,4 @@ else:
 
 # -------------------- FOOTER --------------------
 st.markdown("---")
-st.markdown("##### Developed by Ashutosh • Machine Learning Project • 2025")
+st.markdown("##### Developed by Ashutosh • ML Project • 2025")
