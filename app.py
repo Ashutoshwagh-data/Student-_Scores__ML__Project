@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 
 # Load trained model
-model = pickle.load(open('Student_model (1).pkl', 'rb'))
+model = pickle.load(open('Student_model.pkl', 'rb'))
 
 st.set_page_config(page_title="Student Score Prediction", layout="centered")
 
